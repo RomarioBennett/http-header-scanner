@@ -213,11 +213,7 @@ ruff check .    # code style check
 - The Content-Security-Policy check catches the most common mistakes but isn't a full analyzer.
 - Doesn't inspect TLS versions or certificates.
 
-**Ideas**
-- Scan many sites at once, faster
-- Export results for GitHub code scanning (SARIF)
-- Scan pages that require login
-- HTML report export
+
 
 ## Responsible use
 
