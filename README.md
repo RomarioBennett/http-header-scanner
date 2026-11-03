@@ -1,6 +1,6 @@
 # http-header-scanner
 
-[![CI](https://github.com/YOUR-USERNAME/http-header-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-USERNAME/http-header-scanner/actions)
+[![CI](https://github.com/RomarioBennett/http-header-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-USERNAME/http-header-scanner/actions)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -53,7 +53,7 @@ Some design decisions worth noting:
 ## Install
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/http-header-scanner.git
+git clone https://github.com/RomarioBennett/http-header-scanner.git
 cd http-header-scanner
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
@@ -116,7 +116,7 @@ Recommendations
 ### Use in CI
 
 ```yaml
-- run: pip install git+https://github.com/YOUR-USERNAME/http-header-scanner
+- run: pip install git+https://github.com/RomarioBennett/http-header-scanner
 - run: headerscan https://staging.example.com --min-grade B
 ```
 
