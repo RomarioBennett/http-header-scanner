@@ -170,8 +170,7 @@ ruff check .
 - Checks one URL's response; it does not crawl the site.
 - CSP analysis targets the most common weaknesses; it is not a full CSP evaluator.
 - Does not inspect TLS versions or certificates.
-- Ideas: async scanning of many URLs, SARIF output for GitHub code scanning,
-  `--header` for authenticated scans, HTML report export.
+
 
 ## Responsible use
 
