@@ -1,99 +1,120 @@
 # http-header-scanner
 
-[![CI](https://github.com/RomarioBennett/http-header-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR-USERNAME/http-header-scanner/actions)
+[![CI](https://github.com/RomarioBennett/http-header-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/RomarioBennett/http-header-scanner/actions)
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A command-line tool that makes **one GET request** to a URL, inspects the
-HTTP response headers, and grades the site's security posture from **A to F**,
-with concrete, copy-pasteable fixes for everything it finds.
+**Give it a website address. It tells you how well that site protects its visitors, as a grade from A to F, and shows you exactly how to fix any problems.**
 
-Built to be easy to read, easy to extend, and safe to drop into a CI pipeline.
+```bash
+headerscan https://example.com
+```
 
-## Why headers matter
+## What is this for?
 
-Browsers enforce a lot of security policy, but only if the server asks them to.
-A missing `Content-Security-Policy` leaves the door open for XSS, a missing
-`X-Frame-Options`/`frame-ancestors` allows clickjacking, and a weak
-`Strict-Transport-Security` allows SSL-stripping on hostile networks.
-This tool checks that those protections are present **and actually configured well**.
+Every time you open a website, the server sends back the page plus some hidden
+instructions called **HTTP headers**. Some of these headers are security rules
+for your browser, like "don't let other sites embed this page" or "only talk to
+me over HTTPS."
 
-## What it checks
+If a site forgets to send those rules, browsers fall back to relaxed defaults,
+and attackers can take advantage of that.
 
+This tool checks whether a site sends the right rules **and** whether they are
+set up properly (a rule that's turned off or too loose doesn't count).
 
-When your browser loads a website, the server sends back HTTP headers along with the page. Some of them are instructions to the browser about security, for example “only load scripts from my own domain” or “never let another site put me in an iframe.” If the server doesn’t send them, the browser falls back to permissive defaults, and attacks like cross-site scripting (XSS), clickjacking, and protocol downgrade become easier.
+### Quick example of what can go wrong
 
-This makes one GET request to a URL, reads the response headers, checks them against security best practices, and gives you a grade from A to F with specific fixes. Developers and security teams use tools like this to audit sites.
-
-| Check | Severity | What it catches |
-|---|---|---|
-| HTTPS | high | Pages served over plain HTTP; HTTP that doesn't redirect to HTTPS |
-| `Strict-Transport-Security` | high | Missing, `max-age=0` (actively disabled), under 180 days, or sent over HTTP (ignored) |
-| `Content-Security-Policy` | high | Missing, report-only, `'unsafe-inline'` / `'unsafe-eval'`, wildcard sources, no `script-src`/`default-src` |
-| `X-Content-Type-Options` | medium | MIME-sniffing |
-| Clickjacking | medium | No `X-Frame-Options` or CSP `frame-ancestors` |
-| Cookie flags | medium | `Set-Cookie` missing `Secure`, `HttpOnly`, or `SameSite` |
-| `Referrer-Policy` | low | Missing or leaky (`unsafe-url`) policy |
-| `Permissions-Policy` | low | Powerful browser features left unrestricted |
-| `Cross-Origin-Opener-Policy` / `-Resource-Policy` | low | Missing cross-origin isolation |
-| Technology disclosure | low | `X-Powered-By`, versioned `Server` headers |
-| CORS | high | Wildcard `Access-Control-Allow-Origin` combined with credentials |
-
-Some design decisions worth noting:
-
-- **Values are validated, not just detected.** `max-age=0` and a CSP full of
-  `'unsafe-inline'` are flagged as *weak*, not *passing*.
-- **CSP is parsed**, not pattern-matched, and understands that a nonce or hash
-  makes browsers ignore `'unsafe-inline'`.
-- **Weighted scoring.** high = 30 pts, medium = 15, low = 5. Pass earns full
-  points, warn earns half, fail earns none. Informational findings (e.g. no
-  cookies set) don't affect the score.
-- **Redirects are followed** and the *final* URL is graded, since that's what
-  users actually see. The redirect chain is shown.
-- **Cookie values are never printed**, only names.
-- **Untrusted output is escaped.** Header values come from the remote server,
-  so they're escaped before being rendered, which prevents terminal-markup injection.
-- **Headers only.** The response body is never downloaded.
+| Missing or weak header | What an attacker could do |
+|---|---|
+| `Content-Security-Policy` | Inject malicious scripts into the page (XSS) |
+| `X-Frame-Options` | Trick users into clicking a hidden page inside a frame (clickjacking) |
+| `Strict-Transport-Security` | Force a visitor onto an unencrypted connection on public Wi-Fi |
 
 ## Install
+
+You need Python 3.10 or newer.
 
 ```bash
 git clone https://github.com/RomarioBennett/http-header-scanner.git
 cd http-header-scanner
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate        # on Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
 ```
 
-## Usage
+After this, `headerscan` is a command you can run from anywhere inside that
+virtual environment.
+
+## How to use it
+
+Scan one site:
 
 ```bash
 headerscan https://example.com
-headerscan example.com github.com            # https:// assumed; scan several at once
-headerscan https://example.com --json        # machine-readable output
-headerscan https://example.com --min-grade B # stricter CI gate
-headerscan https://localhost:8443 --insecure # self-signed certificate
-python -m headerscan https://example.com     # without installing the script
 ```
 
-| Option | Description |
-|---|---|
-| `--json` | Print results as JSON |
-| `--min-grade {A..F}` | Exit `1` if any grade is worse than this (default `C`) |
-| `--timeout SECONDS` | Request timeout (default `10`) |
-| `--insecure` | Skip TLS certificate verification |
-| `--user-agent STR` | Override the User-Agent |
+Other things you can do:
 
-### Exit codes
+```bash
+headerscan example.com github.com             # scan several sites (https:// is added for you)
+headerscan https://example.com --json         # output for other programs to read
+headerscan https://example.com --min-grade B  # fail unless the site scores B or better
+headerscan https://localhost:8443 --insecure  # allow a self-signed certificate (testing only)
+python -m headerscan https://example.com      # run it without installing the command
+```
+
+### Options
+
+| Option | What it does |
+|---|---|
+| `--json` | Prints results as JSON instead of a table |
+| `--min-grade A-F` | Sets the lowest grade you'll accept (default: `C`) |
+| `--timeout SECONDS` | How long to wait for the site (default: 10) |
+| `--insecure` | Skips certificate checking, for test servers only |
+| `--user-agent TEXT` | Changes the name the scanner introduces itself with |
+
+### What the exit code means
+
+When the scan finishes, the program ends with a number. Automation tools (like
+CI pipelines) use it to decide if a build should pass.
 
 | Code | Meaning |
 |---|---|
-| `0` | Every URL met `--min-grade` |
-| `1` | At least one URL graded below `--min-grade` |
-| `2` | At least one URL could not be scanned |
+| `0` | Success: every site met your minimum grade |
+| `1` | A site scored below your minimum grade |
+| `2` | A site couldn't be scanned (wrong address, timeout, etc.) |
 
-### Example output
+## What it checks
 
-Scanning a deliberately misconfigured local server:
+Each check is worth points based on how serious it is:
+**high = 30 points, medium = 15, low = 5.**
+
+- **PASS** earns all the points
+- **WARN** (present but weak) earns half
+- **FAIL** (missing or broken) earns none
+- **INFO** is shown for your knowledge but isn't scored
+
+Your score is the points earned divided by the points possible. That percentage
+becomes the grade: **90+ is A, 80+ is B, 70+ is C, 60+ is D, below 60 is F.**
+
+| Check | Severity | In plain English |
+|---|---|---|
+| HTTPS | high | Is the site encrypted? Does plain HTTP redirect to HTTPS? |
+| `Strict-Transport-Security` | high | Does the site tell browsers to always use HTTPS, and for long enough? |
+| `Content-Security-Policy` | high | Does the site limit which scripts can run, without loopholes? |
+| `X-Content-Type-Options` | medium | Stops browsers from guessing file types |
+| Clickjacking protection | medium | Stops other sites from putting this one in a hidden frame |
+| Cookie flags | medium | Are cookies marked `Secure`, `HttpOnly` and `SameSite`? |
+| `Referrer-Policy` | low | Controls how much of your URL is shared with other sites |
+| `Permissions-Policy` | low | Limits access to things like the camera and location |
+| Cross-Origin policies | low | Keeps the page isolated from other sites |
+| Technology disclosure | low | Is the server revealing its software and version number? |
+| CORS | high | Is the site dangerously letting any website make requests with a user's login? |
+
+## Example output
+
+This is a scan of a deliberately badly configured test server:
 
 ```text
                                        http://127.0.0.1:8765 (HTTP 200)
@@ -106,7 +127,6 @@ Scanning a deliberately misconfigured local server:
 │ X-Content-Type-Options       │ PASS   │ medium │ MIME sniffing is disabled.                                │
 │ Clickjacking protection      │ FAIL   │ medium │ Neither X-Frame-Options nor CSP `frame-ancestors` is set. │
 │ Cookie flags                 │ WARN   │ medium │ sid: missing Secure, HttpOnly, SameSite.                  │
-│ Technology disclosure        │ WARN   │ low    │ Response reveals software details useful for fingerprint… │
 │ ...                          │        │        │                                                           │
 ╰──────────────────────────────┴────────┴────────┴───────────────────────────────────────────────────────────╯
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -118,70 +138,97 @@ Recommendations
   ...
 ```
 
-### Use in CI
+Read it top to bottom: each row is one check, then your grade, then a list of
+fixes.
+
+## Use it in your own projects
+
+### In a CI pipeline (GitHub Actions)
+
+This fails the build if your staging site drops below a B:
 
 ```yaml
 - run: pip install git+https://github.com/RomarioBennett/http-header-scanner
 - run: headerscan https://staging.example.com --min-grade B
 ```
 
-### Use as a library
+### As a Python library
 
 ```python
 from headerscan import scan
 
 result = scan("https://example.com")
 print(result.grade, result.score)
+
 for f in result.findings:
     print(f.status.value, f.title, f.detail)
 ```
 
-## Architecture
+## How the code is organized
 
 ```
 src/headerscan/
-├── models.py    # Finding, ScanResult, scoring + grade logic (pure data)
-├── checks.py    # one pure function per check: Context -> Finding (no I/O)
-├── scanner.py   # the only module that touches the network (httpx)
-├── report.py    # Rich terminal rendering
-└── cli.py       # argparse, JSON output, exit codes
+├── cli.py       # reads what you typed and sets the exit code
+├── scanner.py   # visits the website and collects its headers
+├── checks.py    # the security rules (one small function per rule)
+├── models.py    # the data shapes and the scoring/grade math
+└── report.py    # prints the colorful results table
 ```
 
-The key idea is **separating I/O from logic**. Every check is a pure function
-over a `Context`, so the whole rule set is unit-tested without any network.
-The scanner accepts an injectable `httpx` transport, so the integration tests
-use `httpx.MockTransport` rather than live sites.
+The flow when you run a scan:
 
-### Adding a check
+```
+you type a command → cli.py → scanner.py fetches the site → checks.py judges it
+                                                  → models.py scores it → report.py prints it
+```
 
-1. Write `def check_something(ctx: Context) -> Finding` in `checks.py`.
-2. Append it to `ALL_CHECKS`.
-3. Add tests in `tests/test_checks.py`.
+**The main design idea:** only `scanner.py` talks to the internet. Everything
+else is plain logic. That means the rules can be tested instantly with fake
+data, with no real websites involved.
 
-## Development
+### Adding your own check
+
+1. Write a function in `checks.py` that takes the response info and returns a result.
+2. Add it to the `ALL_CHECKS` list.
+3. Write a test for it in `tests/test_checks.py`.
+
+## Built-in safety choices
+
+- **Only one request, headers only.** The page content is never downloaded.
+- **Cookie values are never shown**, only their names, so secrets can't leak into your terminal or logs.
+- **Server output is treated as untrusted.** Text from a website is sanitized before printing so a malicious site can't mess with your terminal.
+- **Redirects are followed.** The final page is what gets graded, since that's what visitors actually see.
+
+## Running the tests
 
 ```bash
-pytest          # 42 tests, no network required
-ruff check .
+pytest          # 42 tests, no internet needed
+ruff check .    # code style check
 ```
 
-## Limitations & roadmap
+## Limitations and ideas for the future
 
-- Checks one URL's response; it does not crawl the site.
-- CSP analysis targets the most common weaknesses; it is not a full CSP evaluator.
-- Does not inspect TLS versions or certificates.
+**Limitations**
+- Checks one page at a time; it doesn't crawl the whole site.
+- The Content-Security-Policy check catches the most common mistakes but isn't a full analyzer.
+- Doesn't inspect TLS versions or certificates.
 
+**Ideas**
+- Scan many sites at once, faster
+- Export results for GitHub code scanning (SARIF)
+- Scan pages that require login
+- HTML report export
 
 ## Responsible use
 
-This tool sends a single ordinary GET request, but only scan sites you own or
-have permission to test.
+This tool sends one ordinary request, but only scan websites you own or have
+permission to test.
 
 ## Credits
 
-Inspired by the weighted-rubric approach of
+Inspired by the weighted grading approach of
 [Mozilla Observatory](https://developer.mozilla.org/en-US/observatory) and the
-foundations-tier project in
+foundations project in
 [CarterPerez-dev/Cybersecurity-Projects](https://github.com/CarterPerez-dev/Cybersecurity-Projects/tree/main/PROJECTS/foundations/http-headers-scanner).
 This is an independent implementation.
 
