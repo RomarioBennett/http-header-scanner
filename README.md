@@ -20,6 +20,11 @@ This tool checks that those protections are present **and actually configured we
 
 ## What it checks
 
+
+When your browser loads a website, the server sends back HTTP headers along with the page. Some of them are instructions to the browser about security, for example “only load scripts from my own domain” or “never let another site put me in an iframe.” If the server doesn’t send them, the browser falls back to permissive defaults, and attacks like cross-site scripting (XSS), clickjacking, and protocol downgrade become easier.
+
+This makes one GET request to a URL, reads the response headers, checks them against security best practices, and gives you a grade from A to F with specific fixes. Developers and security teams use tools like this to audit sites.
+
 | Check | Severity | What it catches |
 |---|---|---|
 | HTTPS | high | Pages served over plain HTTP; HTTP that doesn't redirect to HTTPS |
