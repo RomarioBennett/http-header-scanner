@@ -98,7 +98,7 @@ Each check is worth points based on how serious it is:
 Your score is the points earned divided by the points possible. That percentage
 becomes the grade: **90+ is A, 80+ is B, 70+ is C, 60+ is D, below 60 is F.**
 
-| Check | Severity | In plain English |
+| Check | Severity | Purpose |
 |---|---|---|
 | HTTPS | high | Is the site encrypted? Does plain HTTP redirect to HTTPS? |
 | `Strict-Transport-Security` | high | Does the site tell browsers to always use HTTPS, and for long enough? |
