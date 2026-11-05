@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-**Give it a website address. It tells you how well that site protects its visitors, as a grade from A to F, and shows you exactly how to fix any problems.**
+**This tool, when given a URL tells you how well that site protects its visitors, as a grade from A to F, and shows you exactly how to fix any problems.**
 
 ```bash
 headerscan https://example.com
