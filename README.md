@@ -206,7 +206,7 @@ pytest          # 42 tests, no internet needed
 ruff check .    # code style check
 ```
 
-## Limitations and ideas for the future
+## Limitations
 
 **Limitations**
 - Checks one page at a time; it doesn't crawl the whole site.
